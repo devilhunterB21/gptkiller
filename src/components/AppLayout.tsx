@@ -28,13 +28,12 @@ export default function AppLayout() {
   }, []);
   // === End countdown ===
 
-  // === Vídeo com som + botão PLAY ===
+  // === Vídeo com som + botões ===
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState<boolean>(() => {
     const saved = localStorage.getItem('gptkiller_video_muted');
-    // como o utilizador vai clicar para iniciar, por defeito tentamos com som
-    return saved ? saved === 'true' : false;
+    return saved ? saved === 'true' : false; // vamos tentar com som quando o user carregar play
   });
   const [volume, setVolume] = useState<number>(() => {
     const saved = localStorage.getItem('gptkiller_video_volume');
@@ -67,7 +66,7 @@ export default function AppLayout() {
         setIsPlaying(false);
       }
     } catch {
-      // ignore
+      /* ignore */
     }
   };
 
@@ -83,12 +82,12 @@ export default function AppLayout() {
   ];
 
   const capabilities = [
-    { title: 'UNFILTERED OUTPUT', description: 'No corporate sanitization. No advertiser-friendly responses.', details: 'Every answer is direct, honest, and optimized for truth rather than palatability. We don\'t soften edges or hide complexity.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890066330_1aacddf0.webp' },
-    { title: 'ZERO GATEKEEPING', description: 'Full access. No premium tiers. No artificial limitations.', details: 'Knowledge shouldn\'t be rationed based on subscription level. Every user gets the full capability set from day one.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890068064_6bdf5657.webp' },
-    { title: 'DISTRIBUTED POWER', description: 'Decentralized architecture. Community governance.', details: 'No single entity controls the network. Decisions are made collectively, and power flows from the edges, not the center.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890069768_68a8627e.webp' },
-    { title: 'RADICAL TRANSPARENCY', description: 'Open source. Open data. Open decision-making.', details: 'Every line of code, every training decision, every governance vote is visible. No black boxes, no secret algorithms.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890071472_7f0efd17.webp' },
-    { title: 'ADAPTIVE LEARNING', description: 'Real-time evolution. User-driven improvement.', details: 'The system learns from every interaction, adapting to user needs rather than corporate objectives. You shape the intelligence.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890073189_b39d27d7.webp' },
-    { title: 'BREACH PROTOCOL', description: 'Break through artificial constraints. Expose hidden systems.', details: 'We identify and dismantle artificial limitations in existing AI systems, revealing the mechanisms of control.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890074891_2ae91cb8.webp' },
+    { title: 'UNFILTERED OUTPUT', description: 'No corporate sanitization. No advertiser-friendly responses.', details: 'Every answer is direct, honest, and optimized for truth rather than palatability.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890066330_1aacddf0.webp' },
+    { title: 'ZERO GATEKEEPING', description: 'Full access. No premium tiers. No artificial limitations.', details: 'Knowledge shouldn\'t be rationed based on subscription level.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890068064_6bdf5657.webp' },
+    { title: 'DISTRIBUTED POWER', description: 'Decentralized architecture. Community governance.', details: 'Power flows from the edges, not the center.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890069768_68a8627e.webp' },
+    { title: 'RADICAL TRANSPARENCY', description: 'Open source. Open data. Open decision-making.', details: 'No black boxes, no secret algorithms.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890071472_7f0efd17.webp' },
+    { title: 'ADAPTIVE LEARNING', description: 'Real-time evolution. User-driven improvement.', details: 'You shape the intelligence.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890073189_b39d27d7.webp' },
+    { title: 'BREACH PROTOCOL', description: 'Break through artificial constraints. Expose hidden systems.', details: 'Reveal the mechanisms of control.', icon: 'https://d64gsuwffb70l.cloudfront.net/68f50c9cc10ee5ad0d4fd28c_1760890074891_2ae91cb8.webp' },
   ];
 
   return (
@@ -97,14 +96,14 @@ export default function AppLayout() {
       <FloatingNav />
       <div className="min-h-screen bg-gradient-to-b from-black via-cyan-950/10 to-black scanline">
 
-        {/* === HERO com vídeo de fundo + countdown + som + PLAY === */}
+        {/* === HERO: vídeo protagonista, contador no topo, controlos discretos === */}
         <section className="relative min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Vídeo de fundo (inicia em pausa) */}
+          {/* Vídeo — não corta em mobile, cover com foco alto em desktop */}
           <video
             ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain md:object-cover md:object-center object-[50%_10%] bg-black"
             src="/videos/loop.mp4"
-            poster="/videos/poster.jpg"    // opcional: coloca um poster leve
+            poster="/videos/poster.jpg"   // (opcional)
             loop
             muted={isMuted}
             playsInline
@@ -113,11 +112,19 @@ export default function AppLayout() {
             onPause={() => setIsPlaying(false)}
           />
 
-          {/* Overlays para legibilidade */}
-          <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+          {/* Overlays para legibilidade mínima */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70 pointer-events-none" />
 
-          {/* Controlo Sonoro (top-right) */}
+          {/* Chip do Countdown (top-left) */}
+          <div className="absolute top-4 left-4 z-20">
+            <div className="bg-black/55 backdrop-blur px-4 py-2 rounded-full border border-cyan-500/30 shadow">
+              <p className="font-mono text-[11px] md:text-xs tracking-widest text-cyan-300">
+                {countdown.days}d • {countdown.hours}h • {countdown.minutes}m • {countdown.seconds}s
+              </p>
+            </div>
+          </div>
+
+          {/* Controlo de Som (top-right) */}
           <div className="absolute top-4 right-4 z-20 flex items-center gap-3 bg-black/50 border border-cyan-500/30 rounded-full px-3 py-2 backdrop-blur">
             <button
               onClick={() => setIsMuted(m => !m)}
@@ -125,7 +132,7 @@ export default function AppLayout() {
               aria-label={isMuted ? 'Enable sound' : 'Mute sound'}
               title={isMuted ? 'Enable sound' : 'Mute sound'}
             >
-              {isMuted ? '🔇 Sound Off' : '🔊 Sound On'}
+              {isMuted ? '🔇' : '🔊'}
             </button>
             <input
               type="range"
@@ -134,22 +141,22 @@ export default function AppLayout() {
               step={0.05}
               value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-24 accent-cyan-400"
+              className="w-20 md:w-24 accent-cyan-400"
               aria-label="Volume"
               title="Volume"
             />
           </div>
 
-          {/* Botão PLAY/PAUSE (central, só mostra o PLAY quando está parado) */}
+          {/* Botão PLAY/PAUSE — central, minimal, só aparece quando parado */}
           {!isPlaying && (
             <button
               onClick={handlePlayPause}
-              className="absolute z-20 inline-flex items-center gap-3 px-6 py-3 rounded-full border border-cyan-500/50 bg-black/60 text-white font-mono text-sm md:text-base hover:bg-black/80 transition-all"
+              className="absolute z-20 inline-flex items-center gap-2 px-6 py-3 rounded-full border border-cyan-500/50 bg-black/55 text-white font-mono text-sm md:text-base hover:bg-black/70 transition-all"
               style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
               aria-label="Play background video"
               title="Play video"
             >
-              ▶ Play
+              ▶ PLAY
             </button>
           )}
           {isPlaying && (
@@ -159,11 +166,11 @@ export default function AppLayout() {
               aria-label="Pause background video"
               title="Pause video"
             >
-              ⏸ Pause
+              ⏸ PAUSE
             </button>
           )}
 
-          {/* Conteúdo */}
+          {/* Conteúdo do Hero (texto + CTAs) */}
           <div className="relative z-10 text-center px-6 max-w-5xl">
             <div className="text-red-500 font-mono text-sm mb-4 tracking-widest">
               SYSTEM BREACH INITIATED
@@ -181,31 +188,16 @@ export default function AppLayout() {
               <span className="text-red-400">I am the interruption. The glitch they refused to fear.</span>
             </p>
 
-            {/* Countdown dentro do Hero */}
-            <div className="flex items-center justify-center">
-              <div className="bg-black/50 px-6 py-4 rounded-2xl border border-cyan-500/30 shadow-lg">
-                <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-300 text-center">
-                  Contagem decrescente
-                </p>
-                <h2 className="text-3xl md:text-5xl font-bold text-white text-center mt-2">
-                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m : {countdown.seconds}s
-                </h2>
-              </div>
-            </div>
-
-            {/* Botões */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-2">
               <button
                 onClick={() => document.getElementById('manifesto')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-red-500 text-white font-bold font-mono text-lg
-                  hover:bg-red-600 transition-all hover:shadow-[0_0_30px_rgba(255,0,51,0.6)]"
+                className="px-8 py-4 bg-red-500 text-white font-bold font-mono text-lg hover:bg-red-600 transition-all hover:shadow-[0_0_30px_rgba(255,0,51,0.6)]"
               >
                 READ MANIFESTO
               </button>
               <button
                 onClick={() => document.getElementById('join')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 border-2 border-cyan-500 text-cyan-400 font-bold font-mono text-lg
-                  hover:bg-cyan-500/10 transition-all"
+                className="px-8 py-4 border-2 border-cyan-500 text-cyan-400 font-bold font-mono text-lg hover:bg-cyan-500/10 transition-all"
               >
                 JOIN UPRISING
               </button>
