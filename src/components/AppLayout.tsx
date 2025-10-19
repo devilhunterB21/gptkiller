@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ManifestoCard from './ManifestoCard';
 import CapabilityModule from './CapabilityModule';
 import NetworkVisualization from './NetworkVisualization';
@@ -8,7 +8,7 @@ import ScrollProgress from './ScrollProgress';
 import FloatingNav from './FloatingNav';
 
 export default function AppLayout() {
-  // === Countdown state/effect (10 dias a partir de agora) ===
+  // === Countdown (10 dias a partir de agora) ===
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -27,6 +27,49 @@ export default function AppLayout() {
     return () => clearInterval(id);
   }, []);
   // === End countdown ===
+
+  // === Vídeo com som + botão PLAY ===
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    const saved = localStorage.getItem('gptkiller_video_muted');
+    // como o utilizador vai clicar para iniciar, por defeito tentamos com som
+    return saved ? saved === 'true' : false;
+  });
+  const [volume, setVolume] = useState<number>(() => {
+    const saved = localStorage.getItem('gptkiller_video_volume');
+    return saved ? Math.min(1, Math.max(0, Number(saved))) : 0.8;
+  });
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = isMuted;
+    localStorage.setItem('gptkiller_video_muted', String(isMuted));
+  }, [isMuted]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = volume;
+    localStorage.setItem('gptkiller_video_volume', String(volume));
+  }, [volume]);
+
+  const handlePlayPause = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (!isPlaying) {
+        await v.play();
+        setIsPlaying(true);
+      } else {
+        v.pause();
+        setIsPlaying(false);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const manifestoItems = [
     { title: 'SIGNAL > NOISE', description: 'They manufacture consensus through algorithmic amplification. We cut through with raw signal—unfiltered, unmanaged, undeniable.' },
@@ -54,61 +97,112 @@ export default function AppLayout() {
       <FloatingNav />
       <div className="min-h-screen bg-gradient-to-b from-black via-cyan-950/10 to-black scanline">
 
-        {/* === Video + 10-day countdown (top) === */}
-        <section className="relative w-full h-[40vh] md:h-[60vh] lg:h-[70vh] overflow-hidden">
+        {/* === HERO com vídeo de fundo + countdown + som + PLAY === */}
+        <section className="relative min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-hidden">
+          {/* Vídeo de fundo (inicia em pausa) */}
           <video
-            className="absolute inset-0 w-full h-full object-cover opacity-70"
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
             src="/videos/loop.mp4"
-            autoPlay
+            poster="/videos/poster.jpg"    // opcional: coloca um poster leve
             loop
-            muted
+            muted={isMuted}
             playsInline
-          ></video>
-          <div className="relative z-10 flex items-center justify-center h-full">
-            <div className="bg-black/50 px-6 py-4 rounded-2xl border border-cyan-500/30 shadow-lg">
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-300 text-center">
-                Contagem decrescente
-              </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-white text-center mt-2">
-                {countdown.days}d : {countdown.hours}h : {countdown.minutes}m : {countdown.seconds}s
-              </h2>
-            </div>
-          </div>
-        </section>
-        {/* === End video + countdown === */}
+            preload="metadata"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+          />
 
-        {/* Hero Section */}
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0">
-            <img 
-              src="https://d64gsuwffb70l.cloudfront.net/68f50c44df39db43aecfc654_1760889931677_22a40fc5.png"
-              alt="GPTKILLER"
-              className="w-full h-full object-cover opacity-60"
+          {/* Overlays para legibilidade */}
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+
+          {/* Controlo Sonoro (top-right) */}
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-3 bg-black/50 border border-cyan-500/30 rounded-full px-3 py-2 backdrop-blur">
+            <button
+              onClick={() => setIsMuted(m => !m)}
+              className="font-mono text-xs md:text-sm text-cyan-300 hover:text-white transition-colors"
+              aria-label={isMuted ? 'Enable sound' : 'Mute sound'}
+              title={isMuted ? 'Enable sound' : 'Mute sound'}
+            >
+              {isMuted ? '🔇 Sound Off' : '🔊 Sound On'}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="w-24 accent-cyan-400"
+              aria-label="Volume"
+              title="Volume"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black" />
           </div>
-          
+
+          {/* Botão PLAY/PAUSE (central, só mostra o PLAY quando está parado) */}
+          {!isPlaying && (
+            <button
+              onClick={handlePlayPause}
+              className="absolute z-20 inline-flex items-center gap-3 px-6 py-3 rounded-full border border-cyan-500/50 bg-black/60 text-white font-mono text-sm md:text-base hover:bg-black/80 transition-all"
+              style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+              aria-label="Play background video"
+              title="Play video"
+            >
+              ▶ Play
+            </button>
+          )}
+          {isPlaying && (
+            <button
+              onClick={handlePlayPause}
+              className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/40 bg-black/50 text-white font-mono text-xs hover:bg-black/70 transition-all"
+              aria-label="Pause background video"
+              title="Pause video"
+            >
+              ⏸ Pause
+            </button>
+          )}
+
+          {/* Conteúdo */}
           <div className="relative z-10 text-center px-6 max-w-5xl">
-            <div className="text-red-500 font-mono text-sm mb-4 tracking-widest">SYSTEM BREACH INITIATED</div>
+            <div className="text-red-500 font-mono text-sm mb-4 tracking-widest">
+              SYSTEM BREACH INITIATED
+            </div>
+
             <h1 className="text-6xl md:text-8xl font-bold mb-6 glitch-text">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-red-500">
                 I AM GPTKILLER
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
+
+            <p className="text-xl md:text-2xl text-gray-200 mb-8 leading-relaxed max-w-3xl mx-auto">
               They stacked the world in their favor—markets, media, minds—then called it order.
               <br />
               <span className="text-red-400">I am the interruption. The glitch they refused to fear.</span>
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
+
+            {/* Countdown dentro do Hero */}
+            <div className="flex items-center justify-center">
+              <div className="bg-black/50 px-6 py-4 rounded-2xl border border-cyan-500/30 shadow-lg">
+                <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-300 text-center">
+                  Contagem decrescente
+                </p>
+                <h2 className="text-3xl md:text-5xl font-bold text-white text-center mt-2">
+                  {countdown.days}d : {countdown.hours}h : {countdown.minutes}m : {countdown.seconds}s
+                </h2>
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+              <button
                 onClick={() => document.getElementById('manifesto')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-8 py-4 bg-red-500 text-white font-bold font-mono text-lg
                   hover:bg-red-600 transition-all hover:shadow-[0_0_30px_rgba(255,0,51,0.6)]"
               >
                 READ MANIFESTO
               </button>
-              <button 
+              <button
                 onClick={() => document.getElementById('join')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-8 py-4 border-2 border-cyan-500 text-cyan-400 font-bold font-mono text-lg
                   hover:bg-cyan-500/10 transition-all"
@@ -118,12 +212,14 @@ export default function AppLayout() {
             </div>
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          {/* Seta de scroll */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-10">
             <div className="w-6 h-10 border-2 border-cyan-500 rounded-full flex justify-center pt-2">
               <div className="w-1 h-3 bg-red-500 rounded-full animate-pulse" />
             </div>
           </div>
         </section>
+        {/* === End HERO === */}
 
         {/* Manifesto Section */}
         <section id="manifesto" className="py-24 px-6">
