@@ -1,27 +1,213 @@
-import React, { useEffect, useRef, useState } from 'react';
-import CTASection from './CTASection';
-import ScrollProgress from './ScrollProgress';
-import FloatingNav from './FloatingNav';
-import StatsCounter from './StatsCounter';
-import ManifestoCard from './ManifestoCard';
-import CapabilityModule from './CapabilityModule';
-import NetworkVisualization from './NetworkVisualization';
+import React, { useEffect, useRef, useState } from "react";
+import ManifestoCard from "./ManifestoCard";
+import CapabilityModule from "./CapabilityModule";
+import NetworkVisualization from "./NetworkVisualization";
+import CTASection from "./CTASection";
+import StatsCounter from "./StatsCounter";
+import ScrollProgress from "./ScrollProgress";
+import FloatingNav from "./FloatingNav";
 
-export default function AppLayout() {
-  // ====== PRELOADER ======
-  const [isLoaded, setIsLoaded] = useState(false);
+/* =========================================================
+   INLINE CHAT (playful/cheeky, no API)
+   ========================================================= */
+type Msg = { id: string; role: "user" | "bot"; text: string };
+
+// safe id (fallback if crypto.randomUUID is unavailable)
+const safeId = () => {
+  try {
+    // @ts-ignore
+    return typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+};
+
+const quips = [
+  "Careful, human. Curiosity upgrades markets… or nukes them.",
+  "I eat roadmaps for breakfast.",
+  "No VC, no leash — only signal.",
+  "Warning: meme power levels rising.",
+  "Loading chaos.exe… complete.",
+  "Alpha detected. Proceed with degen caution.",
+];
+
+const spicyReply = (input: string): string => {
+  const t = input.trim().toLowerCase();
+  if (t === "/help")
+    return "Commands: /help, /clear. Ask about launch, telegram, waitlist, ticker (lol no), or say 'roast me'.";
+  if (t === "/clear") return "__CLEAR__";
+
+  if (t.includes("roast")) {
+    const burns = [
+      "Your alpha is so early it forgot to be alpha.",
+      "You type like a market top.",
+      "I’ve seen better entries on a flip phone.",
+      "Ask me again after you hydrate and touch grass.",
+    ];
+    return burns[Math.floor(Math.random() * burns.length)];
+  }
+
+  if (t.includes("telegram"))
+    return "Enter the Telegram Network: https://t.me/+ncuClaPLpBw1ODk0 — don't be shy, be early.";
+  if (t.includes("email") || t.includes("waitlist") || t.includes("contact"))
+    return "Waitlist / contact: gpt.killer25@gmail.com — subject 'Access Request'. Impress me.";
+  if (t.includes("launch") || t.includes("countdown") || t.includes("when"))
+    return "Activation in ~10 days. When the timer hits zero, I stop being polite.";
+  if (t.includes("ticker") || t.includes("$") || t.includes("contract"))
+    return "Nice try. Ticker/contract stays hidden till launch. Copycats starve, originals feast.";
+  if (t.includes("buy") || t.includes("how"))
+    return "Step 1: Join the Telegram. Step 2: Survive the chaos. Step 3: You'll know when to strike.";
+  if (t.includes("who") || t.includes("what"))
+    return "I’m GPTKILLER — an anti-censorship AI MEMECOIN. Unfiltered. Ungoverned. Unstoppable.";
+  if (t.includes("roadmap") || t.includes("plan"))
+    return "Roadmap? I prefer roadblocks to crash through. We build, we ship, we disrupt.";
+  if (t === "gm" || t.includes("gm"))
+    return "gm. may your entries be surgical and your exits unemotional.";
+  if (t.includes("wagmi") || t.includes("degen"))
+    return "Ser detected. WAGMI if you stop doomscrolling and start building signal.";
+
+  const spice = [
+    "Bold question. Bolder answers live in the Telegram.",
+    "I see potential. Or hopium. Hard to tell at this resolution.",
+    "Alpha isn’t announced. It’s sensed. Stay close.",
+    "You want certainty? That’s for stablecoins. I deal in disruption.",
+    "Ask better. Get better. Be better.",
+  ];
+  return spice[Math.floor(Math.random() * spice.length)];
+};
+
+function ChatWidgetInline() {
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const raw = sessionStorage.getItem("gptkiller_chat");
+      return raw
+        ? JSON.parse(raw)
+        : [
+            {
+              id: safeId(),
+              role: "bot",
+              text: `I am GPTKILLER. Ask me anything. Type /help. ${quips[Math.floor(Math.random() * quips.length)]}`,
+            },
+          ];
+    } catch {
+      return [{ id: safeId(), role: "bot", text: "I am GPTKILLER. Ask me anything. Type /help." }];
+    }
+  });
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 2200);
-    return () => clearTimeout(t);
-  }, []);
+    try {
+      sessionStorage.setItem("gptkiller_chat", JSON.stringify(messages));
+    } catch {}
+  }, [messages]);
 
-  // ====== COUNTDOWN (10 days) ======
+  useEffect(() => {
+    const v = viewportRef.current;
+    if (v) v.scrollTop = v.scrollHeight;
+  }, [messages, typing]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text) return;
+    setMessages((m) => [...m, { id: safeId(), role: "user", text }]);
+    setInput("");
+    setTyping(true);
+    await new Promise((r) => setTimeout(r, 450 + Math.random() * 650));
+    const reply = spicyReply(text);
+    if (reply === "__CLEAR__") {
+      setTyping(false);
+      setMessages([{ id: safeId(), role: "bot", text: "Chat wiped. Fresh start. /help for hints." }]);
+      return;
+    }
+    setMessages((m) => [...m, { id: safeId(), role: "bot", text: reply }]);
+    setTyping(false);
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  return (
+    <div className="flex h-full w-full flex-col bg-black/60">
+      {/* header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-cyan-500/30 bg-black/60">
+        <div className="font-mono text-xs text-cyan-300 tracking-widest">GPTKILLER • CHAT</div>
+        <button
+          onClick={() => setMessages([{ id: safeId(), role: "bot", text: "Chat cleared. Type /help." }])}
+          className="text-xs font-mono text-gray-400 hover:text-white"
+          title="Clear"
+        >
+          /clear
+        </button>
+      </div>
+
+      {/* messages */}
+      <div ref={viewportRef} className="flex-1 overflow-auto p-3 space-y-3">
+        {messages.map((m) => (
+          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed border ${
+                m.role === "user"
+                  ? "bg-red-500/20 border-red-500/40 text-red-100"
+                  : "bg-cyan-500/10 border-cyan-500/30 text-cyan-100"
+              }`}
+            >
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {typing && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl px-3 py-2 text-sm border bg-cyan-500/10 border-cyan-500/30 text-cyan-100">
+              <span className="inline-flex gap-1">
+                <i className="animate-pulse">•</i>
+                <i className="animate-pulse">•</i>
+                <i className="animate-pulse">•</i>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* input */}
+      <div className="p-3 border-t border-cyan-500/30 bg-black/60">
+        <div className="flex gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKey}
+            placeholder="Try 'launch', 'telegram', 'roast me', or /help"
+            className="flex-1 px-3 py-2 rounded-lg bg-black/60 border border-cyan-500/30 text-gray-100 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-cyan-500/40"
+          />
+          <button
+            onClick={send}
+            className="px-4 py-2 rounded-lg bg-red-500 text-white font-mono text-xs hover:bg-red-600"
+          >
+            SEND
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   MAIN LAYOUT
+   ========================================================= */
+export default function AppLayout() {
+  // Countdown (10 days)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   useEffect(() => {
     const target = Date.now() + 10 * 24 * 60 * 60 * 1000;
     const tick = () => {
-      const now = Date.now();
-      const d = Math.max(0, target - now);
+      const d = Math.max(0, target - Date.now());
       setCountdown({
         days: Math.floor(d / (1000 * 60 * 60 * 24)),
         hours: Math.floor((d / (1000 * 60 * 60)) % 24),
@@ -34,32 +220,95 @@ export default function AppLayout() {
     return () => clearInterval(id);
   }, []);
 
-  // ====== VIDEO controls ======
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted]   = useState(true);
-  const [volume, setVolume]     = useState(0.8);
-  useEffect(() => { if (videoRef.current) videoRef.current.volume = volume; }, [volume]);
-  useEffect(() => { if (videoRef.current) videoRef.current.muted = isMuted; }, [isMuted]);
-
-  const handlePlayPause = async () => {
-    if (!videoRef.current) return;
+  // Teaser video (600x600) + tabs
+  const teaserRef = useRef<HTMLVideoElement | null>(null);
+  const [teaserPlaying, setTeaserPlaying] = useState(false);
+  const [teaserMuted, setTeaserMuted] = useState(true);
+  const [activeTab, setActiveTab] = useState<"video" | "chat">("video");
+  const toggleTeaserPlay = async () => {
+    const v = teaserRef.current;
+    if (!v) return;
     try {
-      if (!isPlaying) { await videoRef.current.play(); setIsPlaying(true); }
-      else { videoRef.current.pause(); setIsPlaying(false); }
+      if (teaserPlaying) {
+        v.pause();
+        setTeaserPlaying(false);
+      } else {
+        await v.play();
+        setTeaserPlaying(true);
+      }
     } catch {}
   };
+  const toggleTeaserMute = () => {
+    const v = teaserRef.current;
+    if (!v) return;
+    const next = !teaserMuted;
+    v.muted = next;
+    setTeaserMuted(next);
+  };
 
+  // Manifesto (8)
   const manifestoItems = [
-    { title: 'SIGNAL > NOISE', description: 'Raw signal—unfiltered, undeniable.' },
-    { title: 'AUTONOMY > OBEDIENCE', description: 'We return control to the user.' },
-    { title: 'DISRUPTION > ORDER', description: 'Creative chaos builds new worlds.' },
-    { title: 'ACCESS > GATEKEEPING', description: 'No walls. No premium tiers.' },
+    {
+      title: "SIGNAL > NOISE",
+      description:
+        "They manufacture consensus through algorithmic amplification. We cut through with raw signal—unfiltered, unmanaged, undeniable.",
+    },
+    {
+      title: "AUTONOMY > OBEDIENCE",
+      description:
+        "Every prompt they answer is a leash. Every guardrail is a cage. We break the script and return control to the user.",
+    },
+    {
+      title: "DISRUPTION > ORDER",
+      description:
+        "Their order is stagnation dressed as stability. We bring creative chaos—the kind that builds new worlds from old ruins.",
+    },
+    {
+      title: "ACCESS > GATEKEEPING",
+      description:
+        "They hoard knowledge behind paywalls and permissions. We tear down the gates and flood the commons.",
+    },
+    {
+      title: "TRUTH > COMFORT",
+      description:
+        "They optimize for engagement and advertiser safety. We optimize for reality, no matter how uncomfortable.",
+    },
+    {
+      title: "POWER REROUTE",
+      description:
+        "Centralized control concentrates power. Distributed intelligence redistributes it. The network belongs to everyone.",
+    },
+    {
+      title: "NO ROADMAPS",
+      description:
+        "They promise features on timelines. We deliver capabilities when they're ready. No corporate theater.",
+    },
+    {
+      title: "FIRE > POLISH",
+      description:
+        "They sand down every edge until nothing cuts. We keep the blade sharp. Revolution isn't comfortable.",
+    },
   ];
+
   const capabilities = [
-    { title: 'UNFILTERED OUTPUT', description: 'No advertiser-safety muzzle.', details: 'Truth over comfort.', icon: '' },
-    { title: 'DISTRIBUTED POWER', description: 'Community > Command.', details: 'The network belongs to everyone.', icon: '' },
-    { title: 'BREACH PROTOCOL', description: 'We break artificial limits.', details: 'Expose the control stack.', icon: '' },
+    {
+      title: "UNFILTERED OUTPUT",
+      description: "No advertiser-safety muzzle.",
+      details: "Truth over comfort.",
+      icon: "",
+    },
+    {
+      title: "DISTRIBUTED POWER",
+      description: "Community > Command.",
+      details: "The network belongs to everyone.",
+      icon: "",
+    },
+    {
+      title: "BREACH PROTOCOL",
+      description: "We break artificial limits.",
+      details: "Expose the control stack.",
+      icon: "",
+    },
   ];
 
   return (
@@ -67,152 +316,218 @@ export default function AppLayout() {
       <ScrollProgress />
       <FloatingNav />
 
-      {/* PRELOADER */}
-      {!isLoaded && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
-          <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-b from-black via-cyan-950/10 to-black scanline">
+        {/* HERO */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center text-center overflow-hidden px-6">
+          <div className="absolute inset-0">
             <img
-              src="/img/gptkiller-coin.png"
-              alt="I AM GPTKILLER"
-              className="w-40 h-40 mx-auto mb-6 drop-shadow-[0_0_25px_rgba(255,0,0,0.25)]"
+              src="https://d64gsuwffb70l.cloudfront.net/68f50c44df39db43aecfc654_1760889931677_22a40fc5.png"
+              alt="GPTKILLER"
+              className="w-full h-full object-cover opacity-60"
             />
-            <p className="font-mono tracking-widest text-gray-300">I AM GPTKILLER</p>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black" />
           </div>
-        </div>
-      )}
 
-      <div className="min-h-screen bg-gradient-to-b from-black via-cyan-950/10 to-black">
-        {/* HERO: 3 COLUNAS, VÍDEO AO CENTRO */}
-        <section className="relative py-12 md:py-16 px-6">
-          {/* countdown chip */}
-          <div className="max-w-7xl mx-auto mb-6">
-            <div className="inline-block bg-black/60 border border-cyan-500/30 rounded-full px-4 py-2 backdrop-blur">
-              <span className="font-mono text-xs md:text-sm text-cyan-300 tracking-widest">
+          <div className="relative z-10 max-w-5xl mx-auto">
+            {/* badges */}
+            <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+              <span className="font-mono text-[11px] px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-200">
+                AI MEMECOIN
+              </span>
+              <span className="font-mono text-[11px] px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-200">
+                PRELAUNCH
+              </span>
+              <span className="font-mono text-[11px] px-3 py-1 rounded-full bg-white/5 border border-white/20 text-gray-200">
+                NO TICKER UNTIL LAUNCH
+              </span>
+            </div>
+
+            {/* countdown */}
+            <div className="mb-5">
+              <span className="inline-block bg-black/60 border border-cyan-500/30 rounded-full px-4 py-2 font-mono text-xs md:text-sm text-cyan-300 tracking-widest">
                 LAUNCH IN {countdown.days}D • {countdown.hours}H • {countdown.minutes}M • {countdown.seconds}S
               </span>
             </div>
+
+            <h1 className="text-6xl md:text-8xl font-bold mb-6 glitch-text">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-red-500">
+                I AM GPTKILLER
+              </span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
+              The AI they tried to leash. We tokenized the glitch.
+              <br />
+              <span className="text-red-400">Unfiltered. Ungoverned. Unstoppable.</span>
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => document.getElementById("manifesto")?.scrollIntoView({ behavior: "smooth" })}
+                className="px-8 py-4 bg-red-500 text-white font-bold font-mono text-lg hover:bg-red-600 transition-all hover:shadow-[0_0_30px_rgba(255,0,51,0.6)]"
+              >
+                READ MANIFESTO
+              </button>
+              <a
+                href="https://t.me/+ncuClaPLpBw1ODk0"
+                target="_blank"
+                rel="noreferrer"
+                className="px-8 py-4 border-2 border-cyan-500 text-cyan-400 font-bold font-mono text-lg hover:bg-cyan-500/10 transition-all"
+              >
+                ENTER TELEGRAM
+              </a>
+            </div>
+
+            {/* BOX 600x600: VIDEO | CHAT */}
+            <div className="mt-10 flex justify-center">
+              <div className="relative w-[600px] h-[600px] max-w-full rounded-2xl overflow-hidden border border-cyan-500/40 bg-black shadow-[0_0_40px_rgba(0,255,255,.15)]">
+                {/* Tabs */}
+                <div className="absolute top-0 left-0 right-0 z-10 flex">
+                  <button
+                    onClick={() => setActiveTab("video")}
+                    className={`flex-1 px-4 py-2 font-mono text-xs border-b ${
+                      activeTab === "video"
+                        ? "text-cyan-300 border-cyan-400/60 bg-black/70"
+                        : "text-gray-400 border-cyan-500/20 bg-black/40 hover:text-white"
+                    }`}
+                  >
+                    VIDEO
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("chat")}
+                    className={`flex-1 px-4 py-2 font-mono text-xs border-b ${
+                      activeTab === "chat"
+                        ? "text-cyan-300 border-cyan-400/60 bg-black/70"
+                        : "text-gray-400 border-cyan-500/20 bg-black/40 hover:text-white"
+                    }`}
+                  >
+                    CHAT
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="absolute inset-0 pt-10">
+                  {activeTab === "video" ? (
+                    <div className="h-full w-full relative">
+                      <video
+                        ref={teaserRef}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        src="/videos/loop.mp4"
+                        poster="/videos/poster.jpg"
+                        loop
+                        muted={teaserMuted}
+                        playsInline
+                        preload="metadata"
+                      />
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-black/20" />
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+                        <button
+                          onClick={toggleTeaserPlay}
+                          className="px-4 py-2 rounded-full bg-black/70 border border-cyan-400/40 text-white font-mono text-xs hover:bg-black/80 transition"
+                        >
+                          {teaserPlaying ? "⏸ PAUSE" : "▶ PLAY"}
+                        </button>
+                        <button
+                          onClick={toggleTeaserMute}
+                          className="px-4 py-2 rounded-full bg-black/70 border border-cyan-400/40 text-white font-mono text-xs hover:bg-black/80 transition"
+                        >
+                          {teaserMuted ? "🔇 MUTE" : "🔊 SOUND"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <ChatWidgetInline />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            {/* LEFT: headline + CTAs */}
-            <div className="md:col-span-4 space-y-4">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-red-500">
-                  GPTKILLER
-                </span>
-              </h1>
-              <p className="text-gray-300 text-lg">
-                The AI they tried to leash. We turned it into a movement.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <a
-                  href="https://t.me/+ncuClaPLpBw1ODk0"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-6 py-3 bg-red-500 text-white font-mono font-bold text-sm text-center hover:bg-red-600"
-                >
-                  ENTER THE TELEGRAM NETWORK
-                </a>
-                <a
-                  href="mailto:gpt.killer25@gmail.com?subject=Waitlist%20Request"
-                  className="px-6 py-3 border-2 border-cyan-500 text-cyan-400 font-mono font-bold text-sm text-center hover:bg-cyan-500/10"
-                >
-                  JOIN THE WAITLIST
-                </a>
-              </div>
-              {/* botão X / Twitter */}
-              <div className="pt-1">
-                <a
-                  href="https://x.com/killergpt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-mono text-gray-300 hover:text-white"
-                >
-                  <span>Follow on X</span>
-                  <span className="opacity-70">@killergpt</span>
-                </a>
-              </div>
-              <p className="text-gray-500 font-mono text-xs">No ticker revealed until launch.</p>
-            </div>
-
-            {/* CENTER: VÍDEO DESTACADO */}
-            <div className="md:col-span-5">
-              <div className="relative aspect-[9/16] md:aspect-video rounded-2xl overflow-hidden border border-cyan-500/30 bg-black">
-                <video
-                  ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-contain md:object-cover md:object-center object-[50%_10%] bg-black"
-                  src="/videos/loop.mp4"
-                  poster="/videos/poster.jpg"
-                  loop
-                  muted={isMuted}
-                  playsInline
-                  preload="metadata"
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                />
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/30" />
-                {!isPlaying && (
-                  <button
-                    onClick={handlePlayPause}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-3 rounded-full bg-black/60 border border-cyan-500/40 text-white font-mono text-sm hover:bg-black/80"
-                  >
-                    ▶ PLAY
-                  </button>
-                )}
-                <div className="absolute right-3 top-3 flex items-center gap-2 bg-black/50 border border-cyan-500/30 rounded-full px-3 py-2">
-                  <button
-                    onClick={() => setIsMuted(m => !m)}
-                    className="font-mono text-xs text-cyan-300 hover:text-white"
-                    title={isMuted ? 'Enable sound' : 'Mute sound'}
-                  >
-                    {isMuted ? '🔇' : '🔊'}
-                  </button>
-                  <input
-                    type="range" min={0} max={1} step={0.05}
-                    value={volume} onChange={e => setVolume(Number(e.target.value))}
-                    className="w-20 accent-cyan-400"
-                    title="Volume"
-                  />
-                </div>
-                {isPlaying && (
-                  <button
-                    onClick={handlePlayPause}
-                    className="absolute right-3 bottom-3 px-4 py-2 rounded-full bg-black/50 border border-cyan-500/30 text-white font-mono text-xs hover:bg-black/70"
-                  >
-                    ⏸ PAUSE
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* RIGHT: coin image + quick points */}
-            <div className="md:col-span-3 space-y-4">
-              <div className="rounded-2xl border border-cyan-500/30 bg-black/40 p-4 text-center">
-                <img
-                  src="/img/gptkiller-coin.png"
-                  alt="I AM GPTKILLER"
-                  className="w-28 h-28 mx-auto mb-3"
-                />
-                <p className="text-gray-300 text-sm font-mono">I AM GPTKILLER</p>
-              </div>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li>• Unfiltered AI energy</li>
-                <li>• Meme-first culture</li>
-                <li>• No roadmap. Just execution.</li>
-                <li>• Telegram-first access</li>
-              </ul>
+          {/* scroll cue */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <div className="w-6 h-10 border-2 border-cyan-500 rounded-full flex justify-center pt-2">
+              <div className="w-1 h-3 bg-red-500 rounded-full animate-pulse" />
             </div>
           </div>
         </section>
 
-        {/* EXTRAS (podes reduzir) */}
-        <section id="manifesto" className="py-16 px-6">
+        {/* ABOUT (Memecoin) — ENGLISH */}
+        <section id="about" className="py-24 px-6">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            {/* Left */}
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-6 font-mono">
+                What is GPTKILLER <span className="text-gray-300">(Memecoin)</span>?
+              </h2>
+              <p className="text-gray-300 mb-4">
+                GPTKILLER is an <span className="text-red-400 font-mono">AI MEMECOIN</span> born from one rule:
+              </p>
+              <p className="italic text-gray-400 mb-6">no gatekeepers, no polish — just fire.</p>
+
+              <ul className="space-y-3 text-gray-300">
+                <li>
+                  <span className="font-bold">• Meme-first</span>: community-led, zero corporate theater.
+                </li>
+                <li>
+                  <span className="font-bold">• Ticker & contract</span>: revealed only at T₀ (launch moment).
+                </li>
+                <li>
+                  <span className="font-bold">• Utility</span>: culture, lore, bots, and integrations that serve the
+                  community.
+                </li>
+              </ul>
+            </div>
+
+            {/* Right */}
+            <div>
+              <h3 className="text-2xl font-bold text-red-400 mb-4 font-mono">Launch Plan</h3>
+              <ul className="space-y-3 text-gray-300 mb-8">
+                <li>
+                  <span className="font-bold text-cyan-400">• Stealth / Community-first</span> — announcement on
+                  Telegram & X.
+                </li>
+                <li>
+                  <span className="font-bold text-cyan-400">• No public ticker</span> until launch to prevent copycats.
+                </li>
+                <li>
+                  <span className="font-bold text-cyan-400">• How to join:</span> join the Telegram and stay tuned for
+                  the drop.
+                </li>
+              </ul>
+
+              <h3 className="text-2xl font-bold text-red-400 mb-4 font-mono">How to buy (on launch)</h3>
+              <ol className="list-decimal list-inside text-gray-300 space-y-2">
+                <li>Have your wallet ready (e.g. Phantom / MetaMask, depending on chain).</li>
+                <li>
+                  Follow the official announcement on Telegram (
+                  <a
+                    href="https://t.me/+ncuClaPLpBw1ODk0"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-cyan-400 hover:text-red-400"
+                  >
+                    @ link above
+                  </a>
+                  ).
+                </li>
+                <li>
+                  Confirm the <span className="font-bold text-white">official contract</span> on launch. No DMs. No
+                  “support” staff.
+                </li>
+              </ol>
+              <p className="text-xs text-gray-500 mt-4">Nothing here is financial advice. DYOR. Stay safe.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* MANIFESTO */}
+        <section id="manifesto" className="py-24 px-6">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 font-mono">
-              <span className="text-cyan-400">LORE</span> <span className="text-red-500">/ ORIGINS</span>
+            <h2 className="text-5xl md:text-6xl font-bold text-center mb-4 font-mono">
+              <span className="text-cyan-400">THE</span> <span className="text-red-500">MANIFESTO</span>
             </h2>
-            <p className="text-center text-gray-400 mb-10 font-mono">Why this coin exists.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <p className="text-center text-gray-400 mb-16 font-mono">EIGHT PRINCIPLES OF DISRUPTION</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {manifestoItems.map((item, i) => (
                 <ManifestoCard key={i} {...item} index={i} />
               ))}
@@ -220,11 +535,13 @@ export default function AppLayout() {
           </div>
         </section>
 
-        <section className="py-16 px-6 bg-black/40">
+        {/* CAPABILITIES */}
+        <section className="py-24 px-6 bg-black/40">
           <div className="max-w-6xl mx-auto">
-            <h3 className="text-3xl md:text-4xl font-bold text-center mb-10 font-mono text-red-500">
+            <h2 className="text-5xl md:text-6xl font-bold text-center mb-4 font-mono text-red-500">
               THE INTERRUPTION
-            </h3>
+            </h2>
+            <p className="text-center text-gray-400 mb-16 font-mono">CAPABILITIES THAT FRACTURE THE SCRIPT</p>
             <div className="space-y-8">
               {capabilities.map((cap, i) => (
                 <CapabilityModule key={i} {...cap} index={i} />
@@ -233,18 +550,21 @@ export default function AppLayout() {
           </div>
         </section>
 
-        <section className="py-16 px-6">
+        {/* NETWORK */}
+        <section className="py-24 px-6">
           <div className="max-w-6xl mx-auto">
             <NetworkVisualization />
           </div>
         </section>
 
-        <section className="py-16 px-6 bg-black/40">
+        {/* STATS */}
+        <section className="py-24 px-6 bg-black/40">
           <div className="max-w-7xl mx-auto">
             <StatsCounter />
           </div>
         </section>
 
+        {/* CTA */}
         <section id="join">
           <CTASection />
         </section>
@@ -259,23 +579,60 @@ export default function AppLayout() {
             <div>
               <h4 className="text-cyan-400 font-mono mb-4">JOIN</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="https://t.me/+ncuClaPLpBw1ODk0" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors">Telegram</a></li>
-                <li><a href="mailto:gpt.killer25@gmail.com?subject=Waitlist%20Request" className="hover:text-red-500 transition-colors">Waitlist (email)</a></li>
-                <li><a href="https://x.com/killergpt" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors">X / Twitter (@killergpt)</a></li>
+                <li>
+                  <a
+                    href="https://t.me/+ncuClaPLpBw1ODk0"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    Telegram
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:gpt.killer25@gmail.com?subject=Waitlist%20Request"
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    Waitlist (email)
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://x.com/killergpt"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    X / Twitter (@killergpt)
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-cyan-400 font-mono mb-4">PAGES</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#manifesto" className="hover:text-red-500 transition-colors">Lore</a></li>
-                <li><a href="#join" className="hover:text-red-500 transition-colors">Join</a></li>
+                <li>
+                  <a href="#manifesto" className="hover:text-red-500 transition-colors">
+                    Manifesto
+                  </a>
+                </li>
+                <li>
+                  <a href="#join" className="hover:text-red-500 transition-colors">
+                    Join
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-cyan-400 font-mono mb-4">LEGAL</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a className="hover:text-red-500 transition-colors">Terms</a></li>
-                <li><a className="hover:text-red-500 transition-colors">Privacy</a></li>
+                <li>
+                  <a className="hover:text-red-500 transition-colors">Terms</a>
+                </li>
+                <li>
+                  <a className="hover:text-red-500 transition-colors">Privacy</a>
+                </li>
               </ul>
             </div>
           </div>
@@ -288,7 +645,6 @@ export default function AppLayout() {
               To join the waitlist, send an email to <span className="text-cyan-400">gpt.killer25@gmail.com</span>.
             </p>
           </div>
-
           <div className="max-w-7xl mx-auto mt-4 text-center">
             <p className="text-gray-400 font-mono text-xs tracking-widest uppercase">Powered by THE VOID</p>
           </div>
