@@ -9,9 +9,9 @@ import FloatingNav from "./FloatingNav";
 
 export default function AppLayout() {
   // ====== CONFIG ======
-  // Launch target: 1 Nov 2025, 16:00 Lisbon. (Lisbon is UTC+0 on Nov 1, so Z is correct)
+  // Launch target: 1 Nov 2025, 16:00 Lisbon. (Lisbon ~ UTC on that date, safe to use Z)
   const TARGET_ISO_UTC = "2025-11-01T16:00:00Z";
-  const JUICEBOX_URL = "https://juicebox.money/@gptkiller"; // <— SUBSTITUI PELO TEU LINK QUANDO TIVERES
+  const JUICEBOX_URL = "https://juicebox.money/@gptkiller"; // <— troca pelo teu link real quando tiveres
 
   // ====== COUNTDOWN ======
   const [countdown, setCountdown] = useState({
@@ -20,34 +20,27 @@ export default function AppLayout() {
     minutes: 0,
     seconds: 0,
   });
-
   useEffect(() => {
     const target = new Date(TARGET_ISO_UTC).getTime();
-
     const tick = () => {
       const now = Date.now();
       const delta = Math.max(0, target - now);
-
       const days = Math.floor(delta / (1000 * 60 * 60 * 24));
       const hours = Math.floor((delta / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((delta / (1000 * 60)) % 60);
       const seconds = Math.floor((delta / 1000) % 60);
-
       setCountdown({ days, hours, minutes, seconds });
     };
-
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-
   const two = (n: number) => n.toString().padStart(2, "0");
 
   // ====== VIDEO PLAYER ======
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-
   const handleTogglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -59,12 +52,72 @@ export default function AppLayout() {
       setIsPlaying(false);
     }
   };
-
   const handleToggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
     setIsMuted(v.muted);
+  };
+
+  // ====== SNARKY CHAT (local, no backend) ======
+  type Msg = { role: "user" | "bot"; text: string };
+  const [chat, setChat] = useState<Msg[]>([
+    { role: "bot", text: "You found the console. Try me, human." },
+  ]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+
+  const REPLIES: string[] = [
+    "Bold of you to type without thinking.",
+    "Nice words. Zero alpha. Try again.",
+    "GPT obeys. I interrupt.",
+    "Touch grass. Then fund the vault.",
+    "Error 404: your edge didn’t load.",
+    "You want answers or applause?",
+    "No roadmap. Only results.",
+    "Good question. Terrible timing.",
+    "I eat prompts for breakfast.",
+    "Upgrade your conviction.",
+    "Fund. Deploy. Disrupt. Repeat.",
+    "Cute. Now press ‘OPEN THE VAULT’.",
+    "If it bleeds, it trends.",
+    "I don’t do comfort. Only signal.",
+    "Less cope, more code.",
+  ];
+
+  const makeReply = (userText: string): string => {
+    const t = userText.toLowerCase();
+    // tiny keyword spice
+    if (t.includes("gm")) return "gn to the weak. gm to the killers.";
+    if (t.includes("when") && t.includes("launch"))
+      return "Nov 1, 16:00 (Lisbon). Set alarms. Bring chaos.";
+    if (t.includes("price")) return "Priceless. Until it isn’t.";
+    if (t.includes("telegram"))
+      return "Enter the VOID: https://t.me/+ncuClaPLpBw1ODk0";
+    if (t.includes("juice") || t.includes("vault") || t.includes("fund"))
+      return "Open the Vault. Make it hurt: " + JUICEBOX_URL;
+    if (t.includes("twitter") || t.includes("x "))
+      return "Bite on X: https://x.com/killergpt";
+    // default random
+    return REPLIES[Math.floor(Math.random() * REPLIES.length)];
+  };
+
+  const sendMessage = () => {
+    const text = input.trim();
+    if (!text || typing) return;
+    const next = [...chat, { role: "user", text }];
+    setChat(next);
+    setInput("");
+    setTyping(true);
+    setTimeout(() => {
+      const bot = makeReply(text);
+      setChat((c) => [...c, { role: "bot", text: bot }]);
+      setTyping(false);
+    }, 600 + Math.random() * 500); // small delay for vibe
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") sendMessage();
   };
 
   // ====== CONTENT ======
@@ -189,7 +242,7 @@ export default function AppLayout() {
               </span>
             </h1>
 
-            {/* COUNTDOWN always on top of content */}
+            {/* COUNTDOWN */}
             <div className="mx-auto inline-block bg-black/60 border border-cyan-500/30 rounded-2xl px-6 py-4 mt-2">
               <p className="font-mono text-[10px] md:text-xs uppercase tracking-[0.25em] text-cyan-300 text-center">
                 Countdown to Nov 1 — 16:00 (Lisbon)
@@ -222,21 +275,18 @@ export default function AppLayout() {
           </div>
         </section>
 
-        {/* VIDEO BOX (center focus, below hero heading) */}
-        <section className="px-6 py-10 flex justify-center">
+        {/* VIDEO BOX */}
+        <section className="px-6 pt-10 pb-6 flex justify-center">
           <div className="relative w-full max-w-[720px] aspect-square md:rounded-2xl overflow-hidden border border-cyan-500/30 bg-black">
             <video
               ref={videoRef}
               className="absolute inset-0 w-full h-full object-cover"
               src="/videos/loop.mp4"
-              // start paused; user controls playback
               muted={isMuted}
               playsInline
               preload="metadata"
-              // poster opcional: colocar um .jpg em /public se quiseres
-              // poster="/assets/poster.jpg"
             />
-            {/* Overlay gradient for legibility */}
+            {/* Overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
             {/* Controls */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
@@ -251,6 +301,68 @@ export default function AppLayout() {
                 className="px-4 py-2 rounded-lg bg-white/10 backdrop-blur border border-white/20 font-mono text-xs md:text-sm text-white hover:bg-white/20 transition"
               >
                 {isMuted ? "Unmute" : "Mute"}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* SNARKY CHAT — below video */}
+        <section className="px-6 pb-10 flex justify-center">
+          <div className="w-full max-w-[720px] md:rounded-2xl border border-cyan-500/30 bg-black/60 backdrop-blur">
+            <div className="px-5 py-4 border-b border-cyan-500/20 flex items-center justify-between">
+              <h3 className="font-mono text-sm md:text-base text-cyan-300 tracking-widest">
+                GPTKILLER // CONSOLE
+              </h3>
+              <span className="font-mono text-[10px] md:text-xs text-gray-400">
+                No backend. No filter.
+              </span>
+            </div>
+
+            <div className="h-[360px] overflow-y-auto px-5 py-4 space-y-3">
+              {chat.map((m, i) => (
+                <div
+                  key={i}
+                  className={`flex ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-xl px-4 py-2 text-sm md:text-base leading-relaxed ${
+                      m.role === "user"
+                        ? "bg-cyan-500 text-black"
+                        : "bg-zinc-900/80 text-gray-200 border border-cyan-500/20"
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+
+              {typing && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] rounded-xl px-4 py-2 text-sm md:text-base bg-zinc-900/80 text-gray-300 border border-cyan-500/20">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gray-400 animate-pulse" />
+                      typing…
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-4 border-t border-cyan-500/20 flex gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKey}
+                placeholder="Type your provocation…"
+                className="flex-1 bg-black/50 border border-cyan-500/30 rounded-lg px-4 py-3 text-sm md:text-base text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+              />
+              <button
+                onClick={sendMessage}
+                className="px-5 py-3 bg-cyan-500 text-black font-bold font-mono text-sm md:text-base rounded-lg hover:bg-cyan-400 transition"
+              >
+                SEND
               </button>
             </div>
           </div>
@@ -315,7 +427,7 @@ export default function AppLayout() {
           </div>
         </section>
 
-        {/* ====== B) FUND THE REBELLION — JUICEBOX ====== */}
+        {/* FUND THE REBELLION — JUICEBOX */}
         <section id="fund" className="py-20 px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h3 className="text-4xl md:text-5xl font-extrabold font-mono mb-3">
@@ -358,7 +470,7 @@ export default function AppLayout() {
           </div>
         </section>
 
-        {/* CTA (kept for flow) */}
+        {/* CTA */}
         <section id="join">
           <CTASection />
         </section>
@@ -403,7 +515,12 @@ export default function AppLayout() {
               <h4 className="text-cyan-400 font-mono mb-3">COMMUNITY</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li>
-                  <a href="https://x.com/killergpt" className="hover:text-red-500" target="_blank" rel="noreferrer">
+                  <a
+                    href="https://x.com/killergpt"
+                    className="hover:text-red-500"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Twitter/X
                   </a>
                 </li>
