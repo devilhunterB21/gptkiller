@@ -9,9 +9,9 @@ import FloatingNav from "./FloatingNav";
 
 export default function AppLayout() {
   // ====== CONFIG ======
-  // Launch target: 1 Nov 2025, 16:00 Lisbon. (Lisbon ~ UTC on that date, safe to use Z)
+  // Launch target: 1 Nov 2025, 16:00 . (Lisbon ~ UTC on that date, safe to use Z)
   const TARGET_ISO_UTC = "2025-11-01T16:00:00Z";
-  const JUICEBOX_URL = "https://juicebox.money/@gptkiller"; // <— troca pelo teu link real quando tiveres
+  const JUICEBOX_URL = "https://juicebox.money/v5/arb:51"; // <— troca pelo teu link real quando tiveres
 
   // ====== COUNTDOWN ======
   const [countdown, setCountdown] = useState({
